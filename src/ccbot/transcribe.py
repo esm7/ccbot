@@ -1,7 +1,8 @@
 """Voice-to-text transcription via OpenAI's audio API.
 
-Provides a single async function to transcribe voice messages using
-the gpt-4o-transcribe model. Uses httpx directly (no OpenAI SDK needed).
+Provides a single async function to transcribe voice messages. The model,
+language and prompt are configurable via CCBOT_TRANSCRIBE_{MODEL,LANGUAGE,
+PROMPT}. Uses httpx directly (no OpenAI SDK needed).
 
 Key function: transcribe_voice(ogg_data) -> str
 """
@@ -34,11 +35,19 @@ async def transcribe_voice(ogg_data: bytes) -> str:
     """
     url = f"{config.openai_base_url.rstrip('/')}/audio/transcriptions"
     client = _get_client()
+    data: dict[str, str] = {"model": config.transcribe_model}
+    # Only send the optional fields when set -- an empty `language` or `prompt`
+    # is not the same as omitting it, and an empty prompt in particular is worth
+    # avoiding given the model's documented prompt-leakage behaviour on noise.
+    if config.transcribe_language:
+        data["language"] = config.transcribe_language
+    if config.transcribe_prompt:
+        data["prompt"] = config.transcribe_prompt
     response = await client.post(
         url,
         headers={"Authorization": f"Bearer {config.openai_api_key}"},
         files={"file": ("voice.ogg", ogg_data, "audio/ogg")},
-        data={"model": "gpt-4o-transcribe"},
+        data=data,
     )
     response.raise_for_status()
 

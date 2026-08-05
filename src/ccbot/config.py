@@ -107,6 +107,15 @@ class Config:
             "OPENAI_BASE_URL", "https://api.openai.com/v1"
         )
 
+        # Transcription tuning. Model defaults to the upstream hardcoded value.
+        # Language (ISO-639-1) and prompt are omitted from the request when empty,
+        # which reproduces the previous behaviour exactly.
+        self.transcribe_model: str = os.getenv(
+            "CCBOT_TRANSCRIBE_MODEL", "gpt-4o-transcribe"
+        )
+        self.transcribe_language: str = os.getenv("CCBOT_TRANSCRIBE_LANGUAGE", "")
+        self.transcribe_prompt: str = os.getenv("CCBOT_TRANSCRIBE_PROMPT", "")
+
         # Scrub sensitive vars from os.environ so child processes never inherit them.
         # Values are already captured in Config attributes above.
         for var in SENSITIVE_ENV_VARS:
