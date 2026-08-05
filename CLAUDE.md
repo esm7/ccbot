@@ -1,5 +1,51 @@
 # CLAUDE.md
 
+## Fork Notes (esm7/ccbot)
+This is a fork of [six-ddc/ccbot](https://github.com/six-ddc/ccbot). Everything below
+this section is upstream's own guidance, unmodified -- read it as authoritative for
+the codebase itself. This section covers only what the fork adds and how to maintain it.
+
+### Why this fork exists
+The fork drives "Mike", a personal always-on Telegram bridge to Claude Code (a headless
+Debian NUC running `ccbot` under `systemd --user`). Two behaviours were needed that
+upstream does not provide. They were originally applied as hand edits directly inside
+the installed virtualenv, which is machine-local and gitignored -- so every venv rebuild
+silently reverted them and the bridge quietly lost features. The fork exists to make
+those patches durable and reviewable instead of invisible.
+
+### What the fork carries
+Two additive commits on top of upstream, each self-contained and cherry-pickable:
+1. `feat(transcribe): make model, language and prompt configurable` -- upstream hardcodes
+   `gpt-4o-transcribe` and never sends `language` or `prompt`. Adds
+   `CCBOT_TRANSCRIBE_{MODEL,LANGUAGE,PROMPT}`. Defaults reproduce upstream behaviour
+   exactly; empty language/prompt are omitted from the request rather than sent empty,
+   which matters because an empty prompt is not a no-op for the gpt-4o transcribers.
+2. `feat(telegram): forward shared locations to Claude Code as lat,lng` -- upstream's
+   catch-all rejects Telegram location messages as unsupported. Adds `location_handler`,
+   registered before that catch-all. Covers venues too (per the Bot API a venue message
+   also populates `location`), prepending title and address since those cannot be
+   recovered from coordinates. Live locations are ignored by design: their updates arrive
+   as `edited_message`, so the `update.message` guard drops them rather than re-injecting
+   a prompt every few seconds.
+
+### Branch layout and maintenance
+- `main` tracks upstream and carries no local changes. Keep it that way.
+- `mike` carries the two commits above and is the branch actually installed.
+- To take upstream changes: update `main` from upstream, then **rebase** `mike` onto it.
+  Do not merge -- rebasing keeps each patch a clean, PR-ready commit.
+- Patches are deliberately **additive**. `location_handler` duplicates the
+  session-resolution preamble of `photo_handler`/`voice_handler` instead of factoring it
+  out, because a shared-helper refactor would touch untouched upstream handlers and
+  enlarge the rebase conflict surface. Keep new patches equally additive.
+- Both patches are candidates for upstreaming. If either is merged upstream, drop it from
+  `mike` on the next rebase rather than carrying a duplicate.
+
+### Before committing here
+Upstream's bar applies (see Common Commands below): `ruff format` clean and `pyright`
+at 0 errors. Note that `ruff check` reports a large number of **pre-existing** findings
+on untouched upstream code, so it does not pass cleanly and cannot be used as a gate --
+compare findings before and after a change instead of reading the absolute count.
+
 ccmux — Telegram bot that bridges Telegram Forum topics to Claude Code sessions via tmux windows. Each topic is bound to one tmux window running one Claude Code instance.
 
 Tech stack: Python, python-telegram-bot, tmux, uv.
