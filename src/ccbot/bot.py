@@ -558,6 +558,16 @@ async def unsupported_content_handler(
     )
 
 
+# --- Provenance prefixes -----------------------------------------------------
+# Non-text input reaches Claude Code as plain tmux keystrokes, so by default a
+# dictated sentence or a dropped map pin is indistinguishable from something the
+# user typed. These prefixes are prepended to the *injected* text (never to the
+# Telegram echo) so the session can tell how a message arrived and apply
+# different handling -- e.g. treating a bare coordinate pair as context to hold
+# rather than an instruction to act on.
+VOICE_PREFIX = "User's transcripted voice message:"
+LOCATION_PREFIX = "User shared his location:"
+
 # --- Image directory for incoming photos ---
 _IMAGES_DIR = ccbot_dir() / "images"
 _IMAGES_DIR.mkdir(parents=True, exist_ok=True)
@@ -708,7 +718,9 @@ async def voice_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         logger.warning("send_action(TYPING) failed, continuing to injection: %s", e)
     clear_status_msg_info(user.id, thread_id)
 
-    success, message = await session_manager.send_to_window(wid, text)
+    success, message = await session_manager.send_to_window(
+        wid, f"{VOICE_PREFIX} {text}"
+    )
     if not success:
         await safe_reply(update.message, f"❌ {message}")
         return
@@ -776,9 +788,9 @@ async def location_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     venue = update.message.venue
     if venue:
         label = ", ".join(p for p in (venue.title, venue.address) if p)
-        text_to_send = f"{label}\n{coords}" if label else coords
+        body = f"{label}\n{coords}" if label else coords
     else:
-        text_to_send = coords
+        body = coords
 
     try:
         await update.message.chat.send_action(ChatAction.TYPING)
@@ -786,12 +798,16 @@ async def location_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         logger.warning("send_action(TYPING) failed, continuing to injection: %s", e)
     clear_status_msg_info(user.id, thread_id)
 
-    success, message = await session_manager.send_to_window(wid, text_to_send)
+    success, message = await session_manager.send_to_window(
+        wid, f"{LOCATION_PREFIX} {body}"
+    )
     if not success:
         await safe_reply(update.message, f"❌ {message}")
         return
 
-    await safe_reply(update.message, f"📍 {text_to_send}")
+    # Echo the payload without the provenance prefix -- the 📍 already conveys it
+    # to a human, and the prefix exists for the model, not for the topic.
+    await safe_reply(update.message, f"📍 {body}")
 
 
 # Active bash capture tasks: (user_id, thread_id) → asyncio.Task

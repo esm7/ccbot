@@ -28,6 +28,7 @@ In fact, CCBot itself was built this way — iterating on itself through Claude 
 - **Interactive UI** — Navigate AskUserQuestion, ExitPlanMode, and Permission Prompts via inline keyboard
 - **Voice messages** — Voice messages are transcribed via OpenAI and forwarded as text
 - **Locations** — Shared locations and venues are forwarded as `lat,lng`
+- **Provenance prefixes** — Voice and location messages are injected with a short prefix identifying how they arrived, so the session can handle them differently from typed text
 - **Send messages** — Forward text to Claude Code via tmux keystrokes
 - **Slash command forwarding** — Send any `/command` directly to Claude Code (e.g. `/clear`, `/compact`, `/cost`)
 - **Create new sessions** — Start Claude Code sessions from Telegram via directory browser

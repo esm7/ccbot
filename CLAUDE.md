@@ -27,6 +27,29 @@ Two additive commits on top of upstream, each self-contained and cherry-pickable
    recovered from coordinates. Live locations are ignored by design: their updates arrive
    as `edited_message`, so the `update.message` guard drops them rather than re-injecting
    a prompt every few seconds.
+3. `feat(telegram): mark voice and location messages with a provenance prefix` -- adds
+   `VOICE_PREFIX` and `LOCATION_PREFIX`, prepended to the injected text.
+
+### Provenance prefixes: what the model actually sees
+Easy to get wrong, because the Telegram UI is misleading here. Each handler produces
+**two different strings**:
+- `send_to_window(...)` -- what Claude Code receives, via tmux keystrokes.
+- `safe_reply(...)` -- the 🎤 / 📍 / 📷 confirmation rendered in the Telegram topic.
+
+The emoji live only in the echo and **never reach the model**. Because injection is
+plain keystrokes, dictated text and dropped pins would otherwise be indistinguishable
+from typed input. Hence the prefixes, which are applied to the injected string only:
+
+| Input | Injected into the session | Shown in Telegram |
+|---|---|---|
+| Voice | `User's transcripted voice message: <text>` | `🎤 "<text>"` |
+| Location | `User shared his location: <lat>,<lng>` | `📍 <lat>,<lng>` |
+| Venue | `User shared his location: <title>, <address>\n<lat>,<lng>` | `📍 <title>, <address>\n<lat>,<lng>` |
+| Photo | `(image attached: <path>)` | `📷 Image sent to Claude Code.` |
+
+Photos are self-identifying via the path, so they get no prefix. If you change a prefix
+string, update any consuming CLAUDE.md rules that match on it -- they are matched as
+literal text by the downstream session, and a silent rename breaks them without error.
 
 ### Branch layout and maintenance
 - `main` tracks upstream and carries no local changes. Keep it that way.
