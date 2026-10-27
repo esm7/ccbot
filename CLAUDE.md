@@ -46,6 +46,11 @@ ordered commit list -- `git log upstream/main..mike` is the source of truth):
      group's no-topic chat_id under `"<user>:0"`, which would otherwise hijack the
      private chat's output into that group.
    - The topic-existence probe in `status_polling` skips thread 0.
+5. `fix(config): load .env from CCBOT_DIR only` -- upstream loads a `.env` from the cwd
+   with priority over `$CCBOT_DIR/.env`. Mike starts ccbot from the vault, which the
+   Claude session can write to, so a planted `.env` there would swap the bot token and
+   `ALLOWED_USERS` on the next restart. The cwd `.env` is now ignored entirely. Keep it
+   that way when merging upstream changes to `config.py`.
 
 ### Provenance prefixes: what the model actually sees
 Easy to get wrong, because the Telegram UI is misleading here. Each handler produces
