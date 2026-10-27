@@ -33,6 +33,19 @@ ordered commit list -- `git log upstream/main..mike` is the source of truth):
    a prompt every few seconds.
 3. `feat(telegram): mark voice and location messages with a provenance prefix` -- adds
    `VOICE_PREFIX` and `LOCATION_PREFIX`, prepended to the injected text.
+4. `feat(telegram): direct chat mode` -- `CCBOT_DIRECT_CHAT=true` lifts upstream's
+   topic-only constraint for plain private chats: the private chat with the bot acts as
+   one virtual topic with `thread_id` `DIRECT_CHAT_THREAD_ID` (0), bound to one window.
+   `/unbind` then a new message switches sessions. Groups and topics keep working
+   alongside. Off by default, so upstream behaviour is unchanged. Invariants:
+   - `_get_thread_id` is the only switch; everything downstream routes on thread 0 as
+     on any topic.
+   - 0 must never reach Telegram as `message_thread_id`. Send sites use a truthy check
+     (`if thread_id:`) rather than `is not None`; keep it that way in new send code.
+   - `resolve_chat_id` must use the same truthy check: `set_group_chat_id` stores a
+     group's no-topic chat_id under `"<user>:0"`, which would otherwise hijack the
+     private chat's output into that group.
+   - The topic-existence probe in `status_polling` skips thread 0.
 
 ### Provenance prefixes: what the model actually sees
 Easy to get wrong, because the Telegram UI is misleading here. Each handler produces

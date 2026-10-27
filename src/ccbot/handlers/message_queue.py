@@ -316,8 +316,11 @@ async def _message_queue_worker(bot: Bot, user_id: int) -> None:
 
 
 def _send_kwargs(thread_id: int | None) -> dict[str, int]:
-    """Build message_thread_id kwargs for bot.send_message()."""
-    if thread_id is not None:
+    """Build message_thread_id kwargs for bot.send_message().
+
+    Omitted for thread_id 0 (direct chat mode), which Telegram would reject.
+    """
+    if thread_id:
         return {"message_thread_id": thread_id}
     return {}
 

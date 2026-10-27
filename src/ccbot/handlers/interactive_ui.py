@@ -187,7 +187,7 @@ async def handle_interactive_ui(
 
     # Build thread kwargs for send_message
     thread_kwargs: dict[str, int] = {}
-    if thread_id is not None:
+    if thread_id:  # 0 = direct chat mode, never sent to Telegram
         thread_kwargs["message_thread_id"] = thread_id
 
     # Check if we have an existing interactive message to edit

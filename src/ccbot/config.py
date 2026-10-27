@@ -101,6 +101,12 @@ class Config:
             os.getenv("CCBOT_SHOW_HIDDEN_DIRS", "").lower() == "true"
         )
 
+        # Direct chat mode: allow chatting with the bot in a plain private chat
+        # (no group, no topic). The private chat acts as one virtual topic with
+        # thread_id 0, bound to a single window. Off by default, which keeps
+        # upstream's topic-only behaviour.
+        self.direct_chat = os.getenv("CCBOT_DIRECT_CHAT", "").lower() == "true"
+
         # OpenAI API for voice message transcription (optional)
         self.openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
         self.openai_base_url: str = os.getenv(

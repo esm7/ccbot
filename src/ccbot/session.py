@@ -40,6 +40,12 @@ from .utils import atomic_write_json
 
 logger = logging.getLogger(__name__)
 
+# Virtual thread_id for a plain private chat in direct chat mode
+# (CCBOT_DIRECT_CHAT). Telegram never assigns thread_id 0, and the rest of the
+# code already keys "no thread" as 0, so it is safe as a binding key. It must
+# never be sent to Telegram as message_thread_id.
+DIRECT_CHAT_THREAD_ID = 0
+
 
 @dataclass
 class WindowState:
@@ -551,7 +557,9 @@ class SessionManager:
         this method instead of raw user_id. Using user_id directly breaks
         supergroup forum topic routing.
         """
-        if thread_id is not None:
+        # Truthy check, not "is not None": thread_id 0 (direct chat mode) is a
+        # private chat, and "user:0" may hold a group's no-topic chat_id.
+        if thread_id:
             key = f"{user_id}:{thread_id}"
             group_id = self.group_chat_ids.get(key)
             if group_id is not None:

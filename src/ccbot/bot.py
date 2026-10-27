@@ -130,7 +130,7 @@ from .markdown_v2 import convert_markdown
 from .handlers.response_builder import build_response_parts
 from .handlers.status_polling import status_poll_loop
 from .screenshot import text_to_image
-from .session import session_manager
+from .session import DIRECT_CHAT_THREAD_ID, session_manager
 from .session_monitor import NewMessage, SessionMonitor
 from .terminal_parser import extract_bash_output, is_interactive_ui
 from .tmux_manager import tmux_manager
@@ -162,13 +162,19 @@ def is_user_allowed(user_id: int | None) -> bool:
 
 
 def _get_thread_id(update: Update) -> int | None:
-    """Extract thread_id from an update, returning None if not in a named topic."""
+    """Extract thread_id from an update, returning None if not in a named topic.
+
+    In direct chat mode (CCBOT_DIRECT_CHAT), a plain private chat with the bot
+    returns DIRECT_CHAT_THREAD_ID, so it routes like a single named topic.
+    """
     msg = update.message or (
         update.callback_query.message if update.callback_query else None
     )
     if msg is None:
         return None
     tid = getattr(msg, "message_thread_id", None)
+    if tid is None and config.direct_chat and msg.chat.type == "private":
+        return DIRECT_CHAT_THREAD_ID
     if tid is None or tid == 1:
         return None
     return tid
@@ -187,6 +193,14 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     clear_browse_state(context.user_data)
 
     if update.message:
+        if _get_thread_id(update) == DIRECT_CHAT_THREAD_ID:
+            await safe_reply(
+                update.message,
+                "🤖 *Claude Code Monitor*\n\n"
+                "This chat is one session. Send a message to start, "
+                "or /unbind to switch to another session.",
+            )
+            return
         await safe_reply(
             update.message,
             "🤖 *Claude Code Monitor*\n\n"

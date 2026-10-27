@@ -23,7 +23,7 @@ import time
 from telegram import Bot
 from telegram.error import BadRequest
 
-from ..session import session_manager
+from ..session import DIRECT_CHAT_THREAD_ID, session_manager
 from ..terminal_parser import is_interactive_ui, parse_status_line
 from ..tmux_manager import tmux_manager
 from .interactive_ui import (
@@ -132,6 +132,10 @@ async def status_poll_loop(bot: Bot) -> None:
                 for user_id, thread_id, wid in list(
                     session_manager.iter_thread_bindings()
                 ):
+                    # Direct chat mode: a private chat is not a topic and cannot
+                    # be deleted like one, so there is nothing to probe.
+                    if thread_id == DIRECT_CHAT_THREAD_ID:
+                        continue
                     try:
                         await bot.unpin_all_forum_topic_messages(
                             chat_id=session_manager.resolve_chat_id(user_id, thread_id),

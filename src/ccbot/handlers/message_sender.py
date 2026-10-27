@@ -63,6 +63,9 @@ async def send_with_fallback(
     RetryAfter is re-raised for caller handling.
     """
     kwargs.setdefault("link_preview_options", NO_LINK_PREVIEW)
+    # Drop a thread_id of 0 (direct chat mode), which Telegram would reject
+    if not kwargs.get("message_thread_id"):
+        kwargs.pop("message_thread_id", None)
     try:
         return await bot.send_message(
             chat_id=chat_id,
@@ -176,7 +179,7 @@ async def safe_send(
 ) -> None:
     """Send message with formatting, falling back to plain text on failure."""
     kwargs.setdefault("link_preview_options", NO_LINK_PREVIEW)
-    if message_thread_id is not None:
+    if message_thread_id:  # 0 = direct chat mode, never sent to Telegram
         kwargs.setdefault("message_thread_id", message_thread_id)
     try:
         await bot.send_message(
