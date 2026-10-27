@@ -7,14 +7,18 @@ the codebase itself. This section covers only what the fork adds and how to main
 
 ### Why this fork exists
 The fork drives "Mike", a personal always-on Telegram bridge to Claude Code (a headless
-Debian NUC running `ccbot` under `systemd --user`). Two behaviours were needed that
-upstream does not provide. They were originally applied as hand edits directly inside
-the installed virtualenv, which is machine-local and gitignored -- so every venv rebuild
-silently reverted them and the bridge quietly lost features. The fork exists to make
-those patches durable and reviewable instead of invisible.
+Debian NUC running `ccbot` under `systemd --user`). It started as a few patches for
+behaviours upstream lacks, originally hand-edited inside the installed virtualenv
+(machine-local and gitignored, so every venv rebuild silently reverted them).
+
+It is now Erez's own customized version of ccbot: changes are made freely to fit how
+Mike is used, not limited to small patches or to what upstream would accept. The one
+standing constraint is that syncing with upstream must stay possible -- see the
+maintenance section below.
 
 ### What the fork carries
-Two additive commits on top of upstream, each self-contained and cherry-pickable:
+Notable fork features, kept here so their rationale survives (not an exhaustive or
+ordered commit list -- `git log upstream/main..mike` is the source of truth):
 1. `feat(transcribe): make model, language and prompt configurable` -- upstream hardcodes
    `gpt-4o-transcribe` and never sends `language` or `prompt`. Adds
    `CCBOT_TRANSCRIBE_{MODEL,LANGUAGE,PROMPT}`. Defaults reproduce upstream behaviour
@@ -53,15 +57,18 @@ literal text by the downstream session, and a silent rename breaks them without 
 
 ### Branch layout and maintenance
 - `main` tracks upstream and carries no local changes. Keep it that way.
-- `mike` carries the two commits above and is the branch actually installed.
-- To take upstream changes: update `main` from upstream, then **rebase** `mike` onto it.
-  Do not merge -- rebasing keeps each patch a clean, PR-ready commit.
-- Patches are deliberately **additive**. `location_handler` duplicates the
-  session-resolution preamble of `photo_handler`/`voice_handler` instead of factoring it
-  out, because a shared-helper refactor would touch untouched upstream handlers and
-  enlarge the rebase conflict surface. Keep new patches equally additive.
-- Both patches are candidates for upstreaming. If either is merged upstream, drop it from
-  `mike` on the next rebase rather than carrying a duplicate.
+- `mike` carries all fork work and is the branch actually installed.
+- To take upstream changes: update `main` from upstream, then **merge** it into `mike`.
+  `mike` is a long-lived, divergent, deployed branch, so it is not rebased -- rewriting
+  it would mean force-pushing the installed branch and replaying every fork commit on
+  each sync.
+- Keep upstream sync cheap: make the changes a feature needs, but avoid gratuitous
+  churn in upstream code -- no broad refactors, renames, reformatting or file moves
+  unless the feature actually requires them. Prefer adding new code (new modules,
+  handlers, config options) over rewriting upstream's, when both are reasonable.
+- Upstreaming is optional. When a change is generally useful, it can be offered as a PR
+  from a branch cut off `main`. If upstream merges an equivalent, prefer upstream's
+  version on the next sync and drop the fork's copy.
 
 ### Before committing here
 Upstream's bar applies (see Common Commands below): `ruff format` clean and `pyright`
