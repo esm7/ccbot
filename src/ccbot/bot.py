@@ -54,10 +54,12 @@ from telegram.ext import (
     CommandHandler,
     ContextTypes,
     MessageHandler,
+    TypeHandler,
     filters,
 )
 
 from .config import config
+from .handlers.access_gate import ACCESS_GATE_GROUP, access_gate
 from .handlers.callback_data import (
     CB_ASK_DOWN,
     CB_ASK_ENTER,
@@ -2017,6 +2019,10 @@ def create_bot() -> Application:
         .post_shutdown(post_shutdown)
         .build()
     )
+
+    # Fail-closed access gate: runs before every handler below (group 0) and
+    # stops any update from a sender or chat that is not allowed.
+    application.add_handler(TypeHandler(Update, access_gate), group=ACCESS_GATE_GROUP)
 
     application.add_handler(CommandHandler("start", start_command))
     application.add_handler(CommandHandler("history", history_command))

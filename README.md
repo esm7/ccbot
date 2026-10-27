@@ -93,6 +93,7 @@ ALLOWED_USERS=your_telegram_user_id
 | Variable                | Default    | Description                                      |
 | ----------------------- | ---------- | ------------------------------------------------ |
 | `CCBOT_DIR`             | `~/.ccbot` | Config/state directory (`.env` loaded from here) |
+| `CCBOT_ALLOWED_CHATS`   | _(any)_    | Comma-separated group chat IDs the bot accepts; empty allows any group |
 | `TMUX_SESSION_NAME`     | `ccbot`    | Tmux session name                                |
 | `CLAUDE_COMMAND`        | `claude`   | Command to run in new windows                    |
 | `MONITOR_POLL_INTERVAL` | `2.0`      | Polling interval in seconds                      |

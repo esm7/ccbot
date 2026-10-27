@@ -56,6 +56,19 @@ class Config:
                 "Expected comma-separated Telegram user IDs."
             ) from e
 
+        # Optional group allowlist for the access gate (handlers/access_gate.py).
+        # Empty means any group, gated by ALLOWED_USERS only.
+        allowed_chats_str = os.getenv("CCBOT_ALLOWED_CHATS", "")
+        try:
+            self.allowed_chats: set[int] = {
+                int(cid.strip()) for cid in allowed_chats_str.split(",") if cid.strip()
+            }
+        except ValueError as e:
+            raise ValueError(
+                f"CCBOT_ALLOWED_CHATS contains non-numeric value: {e}. "
+                "Expected comma-separated Telegram chat IDs."
+            ) from e
+
         # Tmux session name and window naming
         self.tmux_session_name = os.getenv("TMUX_SESSION_NAME", "ccbot")
         self.tmux_main_window_name = "__main__"
