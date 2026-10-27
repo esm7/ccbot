@@ -13,13 +13,11 @@ import pytest
 from telegram import Update, User
 from telegram.ext import Application, ExtBot, MessageHandler, TypeHandler, filters
 
-from ccbot.config import config
 from ccbot.handlers.access_gate import ACCESS_GATE_GROUP, access_gate
 
 ALLOWED_USER = 12345  # Set by the root conftest.
 STRANGER = 99999
 GROUP_ID = -1001234567890
-OTHER_GROUP_ID = -1009999999999
 ANON_ADMIN_ID = 1087968824  # Telegram's GroupAnonymousBot.
 CHANNEL_BOT_ID = 136817688  # Telegram's Channel_Bot ("send as channel").
 BOT_ID = 1
@@ -211,25 +209,6 @@ class TestGateBlocks:
         application, mocks = app
         _run(application, _update(application, kind, uid, chat_id, chat_type))
         assert not _called(mocks)
-
-    @pytest.mark.parametrize("kind", KINDS)
-    def test_group_outside_allowed_chats_is_blocked(
-        self, app, kind, monkeypatch
-    ) -> None:
-        application, mocks = app
-        monkeypatch.setattr(config, "allowed_chats", {GROUP_ID})
-        update = _update(application, kind, ALLOWED_USER, OTHER_GROUP_ID, "supergroup")
-        _run(application, update)
-        assert not _called(mocks)
-
-    def test_group_in_allowed_chats_passes(self, app, monkeypatch) -> None:
-        application, mocks = app
-        monkeypatch.setattr(config, "allowed_chats", {GROUP_ID})
-        _run(
-            application,
-            _update(application, "text", ALLOWED_USER, GROUP_ID, "supergroup"),
-        )
-        assert _called(mocks)
 
     def test_handler_added_later_is_protected(self, app) -> None:
         """A future handler without its own check is still covered by the gate."""

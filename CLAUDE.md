@@ -55,8 +55,8 @@ ordered commit list -- `git log upstream/main..mike` is the source of truth):
    `if` at the top of each handler, so one missing check exposes the session.
    `handlers/access_gate.py` adds a `TypeHandler` in group `-1` (`ACCESS_GATE_GROUP`)
    that raises `ApplicationHandlerStop` unless the sender is in `ALLOWED_USERS` and the
-   chat is allowed (own private chat; groups limited by `CCBOT_ALLOWED_CHATS` when set;
-   everything else rejected). Rejections are silent. Upstream's per-handler checks stay
+   chat is the sender's own private chat or a group (channels and anything else are
+   rejected). Rejections are silent. Upstream's per-handler checks stay
    as a second layer. Invariants:
    - Every other handler must stay in a group above `-1`. `test_access_gate.py` asserts
      this, and runs every update kind from disallowed senders through the real

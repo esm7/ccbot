@@ -9,8 +9,7 @@ per-handler checks in bot.py stay as a second layer.
 
 Chat rules:
   - private: only the sender's own chat (chat.id == user.id).
-  - group/supergroup: if CCBOT_ALLOWED_CHATS is set, only those chat IDs;
-    otherwise any group (the sender check still applies).
+  - group/supergroup: any (the sender check above is what gates them).
   - anything else (channels, unknown types): rejected.
 
 Rejections are silent: no reply is sent, so the bot does not confirm its
@@ -42,9 +41,7 @@ def is_update_allowed(update: Update) -> bool:
         return False
     if chat.type == "private":
         return chat.id == user.id
-    if chat.type in ("group", "supergroup"):
-        return not config.allowed_chats or chat.id in config.allowed_chats
-    return False
+    return chat.type in ("group", "supergroup")
 
 
 async def access_gate(update: object, _context: ContextTypes.DEFAULT_TYPE) -> None:
