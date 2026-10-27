@@ -2,7 +2,7 @@
 
 Loads TELEGRAM_BOT_TOKEN, ALLOWED_USERS, tmux/Claude paths, and
 monitoring intervals from environment variables (with .env support).
-.env loading priority: local .env (cwd) > $CCBOT_DIR/.env (default ~/.ccbot).
+.env is loaded from $CCBOT_DIR/.env (default ~/.ccbot) only, never from the cwd.
 The module-level `config` instance is imported by nearly every other module.
 
 Key class: Config (singleton instantiated as `config`).
@@ -29,13 +29,12 @@ class Config:
         self.config_dir = ccbot_dir()
         self.config_dir.mkdir(parents=True, exist_ok=True)
 
-        # Load .env: local (cwd) takes priority over config_dir
-        # load_dotenv default override=False means first-loaded wins
-        local_env = Path(".env")
+        # Load .env from config_dir only. A .env in the cwd is deliberately
+        # ignored: the cwd is often a working tree the Claude session can write
+        # to, and a planted .env there would replace TELEGRAM_BOT_TOKEN and
+        # ALLOWED_USERS on the next restart. Real env vars still win
+        # (load_dotenv default override=False).
         global_env = self.config_dir / ".env"
-        if local_env.is_file():
-            load_dotenv(local_env)
-            logger.debug("Loaded env from %s", local_env.resolve())
         if global_env.is_file():
             load_dotenv(global_env)
             logger.debug("Loaded env from %s", global_env)

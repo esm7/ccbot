@@ -117,3 +117,42 @@ class TestConfigOpenAI:
         monkeypatch.setenv("OPENAI_API_KEY", "sk-secret")
         Config()
         assert os.environ.get("OPENAI_API_KEY") is None
+
+
+class TestConfigDotenv:
+    @pytest.fixture
+    def dirs(self, monkeypatch, tmp_path):
+        cwd = tmp_path / "cwd"
+        cfg_dir = tmp_path / "cfg"
+        cwd.mkdir()
+        cfg_dir.mkdir()
+        monkeypatch.chdir(cwd)
+        monkeypatch.setenv("CCBOT_DIR", str(cfg_dir))
+        monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
+        monkeypatch.delenv("ALLOWED_USERS", raising=False)
+        return cwd, cfg_dir
+
+    def test_loads_env_from_ccbot_dir(self, dirs):
+        _, cfg_dir = dirs
+        (cfg_dir / ".env").write_text(
+            "TELEGRAM_BOT_TOKEN=real:token\nALLOWED_USERS=12345\n"
+        )
+        cfg = Config()
+        assert cfg.telegram_bot_token == "real:token"
+        assert cfg.allowed_users == {12345}
+
+    def test_cwd_env_does_not_override_ccbot_dir(self, dirs):
+        cwd, cfg_dir = dirs
+        (cfg_dir / ".env").write_text(
+            "TELEGRAM_BOT_TOKEN=real:token\nALLOWED_USERS=12345\n"
+        )
+        (cwd / ".env").write_text("TELEGRAM_BOT_TOKEN=evil:token\nALLOWED_USERS=666\n")
+        cfg = Config()
+        assert cfg.telegram_bot_token == "real:token"
+        assert cfg.allowed_users == {12345}
+
+    def test_cwd_env_alone_is_ignored(self, dirs):
+        cwd, _ = dirs
+        (cwd / ".env").write_text("TELEGRAM_BOT_TOKEN=evil:token\nALLOWED_USERS=666\n")
+        with pytest.raises(ValueError, match="TELEGRAM_BOT_TOKEN"):
+            Config()
